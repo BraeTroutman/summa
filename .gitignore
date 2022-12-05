@@ -1,2 +1,4 @@
 bin
 profile*
+a.out
+*.o

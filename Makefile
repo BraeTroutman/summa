@@ -8,7 +8,7 @@ $(BUILDDIR)/summa: summa.cpp
 	mkdir -p $(BUILDDIR)
 	mpic++ summa.cpp -o bin/summa
 
-$(BUILDDIR/summatau: summa.cpp
+$(BUILDDIR)/summatau: summa.cpp
 	mkdir -p $(BUILDDIR)
 	tau_cxx.sh summa.cpp -o bin/summatau
 

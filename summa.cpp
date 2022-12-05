@@ -1,5 +1,7 @@
 #include <iostream>
+#include <fstream>
 #include <cstring>
+#include <string>
 #include <stdlib.h>
 #include <math.h>
 #include <mpi.h>
@@ -13,6 +15,7 @@ const bool DEBUG = true;
 void init_rand(double* a, int m, int n);
 // local matvec: y = y+A*x, where A is m x n
 void local_gemv(double* A, double* x, double* y, int m, int n);
+void local_gemm(double* a, double* b, double* c, int m, int n);
 
 int main(int argc, char** argv) {
 
@@ -104,7 +107,7 @@ int main(int argc, char** argv) {
             memcpy(Btemp, Blocal+b*j*nloc, b*nloc*sizeof(double));
             MPI_Bcast(Atemp, b*mloc, MPI_DOUBLE, i, row_comm);
             MPI_Bcast(Btemp, b*nloc, MPI_DOUBLE, i, col_comm);
-
+            local_gemm(Atemp, Btemp, Clocal, mloc, b);
         }
     }
 
@@ -122,24 +125,33 @@ int main(int argc, char** argv) {
 
 
     if (DEBUG) {
-        MPI_Barrier(MPI_COMM_WORLD);
-        
-        cout << "Process (" << ranki << "," << rankj << ") [" << rank << "]:\n";
-        cout << "Alocal: \n";
+        ofstream logfile;
+        logfile.open("log" + to_string(ranki) + to_string(rankj) + ".txt");
+        logfile << "Process (" << ranki << "," << rankj << ") [" << rank << "]:\n";
+        logfile << "Alocal: \n";
         for (int i = 0; i < mloc; i++) {
             for (int j = 0; j < nloc; j++) {
-                cout << Alocal[i+j*mloc] << " ";
+                logfile << Alocal[i+j*mloc] << " ";
             }
-            cout << "\n";
+            logfile << "\n";
         }
-        cout << "\nBlocal: \n";
+        logfile << "\nBlocal: \n";
         for (int i = 0; i < mloc; i++) {
             for (int j = 0; j < nloc; j++) {
-                cout << Blocal[i*nloc+j] << " ";
+                logfile << Blocal[i*nloc+j] << " ";
             }
-            cout << "\n";
+            logfile << "\n";
         }
-        cout << endl;
+
+        logfile << "\nClocal: \n";
+        for (int i = 0; i < mloc; i++) {
+            for (int j = 0; j < nloc; j++) {
+                logfile << Clocal[i+j*mloc] << " ";
+            }
+            logfile << "\n";
+        }
+        logfile << endl;
+        logfile.close();
     }
 
 
@@ -159,6 +171,18 @@ void local_gemv(double* a, double* x, double* y, int m, int n) {
     for(int i = 0; i < m; i++) {
         for(int j = 0; j < n; j++) {
             y[i] += a[i+j*m] * x[j];
+        }
+    }
+}
+
+void local_gemm(double* a, double* b, double* c, int m, int n) {
+    // assume a is in column-major storage, and b is in row-major storage
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < m; j++) {
+            for (int k = 0; k < n; k++) {
+                // C(i,j) += A(i,k) * B(k,j)
+                c[i+j*m] += a[i+k*m] * b[k*n+j];
+            }
         }
     }
 }

@@ -72,6 +72,9 @@ int main(int argc, char** argv) {
     double* Blocal = new double[mloc*nloc];
     double* Clocal = new double[mloc*nloc];
 
+    double* Atemp = new double[b*mloc];
+    double* Btemp = new double[b*mloc];
+
    	init_rand(Alocal, mloc, nloc);
 	if (IDENT) {
 		for (int i = 0; i < mloc; i++) {
@@ -92,12 +95,8 @@ int main(int argc, char** argv) {
     // broadcasts and local multiplications
     for (int i = 0; i < p; i++) {
         for (int j = 0; j < m / (b*p); j++) {
-            if (rankj == j) {
-
-            }
-            if (ranki == j) {
-
-            }
+            MPI_Bcast(Atemp, mloc*b, MPI_DOUBLE, j, row_comm);
+            MPI_Bcast(Btemp, mloc*b, MPI_DOUBLE, j, col_comm);
         }
     }
 

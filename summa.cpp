@@ -1,8 +1,9 @@
 #include <iostream>
 #include <fstream>
 #include <cstring>
-#include <string>
 #include <stdlib.h>
+#include <string>
+#include <sstream>
 #include <math.h>
 #include <mpi.h>
 #include <cassert>
@@ -137,7 +138,13 @@ int main(int argc, char** argv) {
 
     if (DEBUG) {
         ofstream logfile;
-        logfile.open("log/" + to_string(ranki) + ":" + to_string(rankj) + ".log");
+        stringstream s("");
+        string filename;
+
+        s << "log/" << ranki << ":" << rankj << ".log";
+        s >> filename;
+
+        logfile.open(filename.data());
         logfile << "Process (" << ranki << "," << rankj << ") [" << rank << "]:\n";
         logfile << "Alocal: \n";
         for (int i = 0; i < mloc; i++) {

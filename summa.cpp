@@ -7,7 +7,7 @@
 
 using namespace std;
 
-const bool DEBUG = false;
+const bool DEBUG = true;
 
 // initialize matrix and vectors (A is mxn, x is xn-vec)
 void init_rand(double* a, int m, int n);
@@ -67,22 +67,27 @@ int main(int argc, char** argv) {
     // Initialize matrices and vectors
     int mloc = m / p;     // number of rows of local matrix
     int nloc = m / p;     // number of cols of local matrix
-    
+   
+    // column-wise multiplicand
     double* Alocal = new double[mloc*nloc];
+    // row-wise multiplier
     double* Blocal = new double[mloc*nloc];
+    // column-wise product
     double* Clocal = new double[mloc*nloc];
-
+    
+    // n/sqrt(p) by b temporary matrix
     double* Atemp = new double[b*mloc];
+    // b by n/sqrt(p) temporary matrix
     double* Btemp = new double[b*mloc];
 
    	init_rand(Alocal, mloc, nloc);
 	if (IDENT) {
-		for (int i = 0; i < mloc; i++) {
-			for (int j = 0; j < nloc; j++) {
+		for (int i = 0; i < nloc; i++) {
+			for (int j = 0; j < mloc; j++) {
 				if (i + ranki*mloc == j + rankj*nloc) {
-					Blocal[i+j*mloc] = 1;
+					Blocal[i*nloc+j] = 1;
 				} else {
-					Blocal[i+j*mloc] = 0;
+					Blocal[i*nloc+j] = 0;
 				}
 			}
 		}
@@ -95,8 +100,11 @@ int main(int argc, char** argv) {
     // broadcasts and local multiplications
     for (int i = 0; i < p; i++) {
         for (int j = 0; j < m / (b*p); j++) {
-            MPI_Bcast(Atemp, mloc*b, MPI_DOUBLE, j, row_comm);
-            MPI_Bcast(Btemp, mloc*b, MPI_DOUBLE, j, col_comm);
+            memcpy(Atemp, Alocal+b*j*mloc, b*mloc*sizeof(double));
+            memcpy(Btemp, Blocal+b*j*nloc, b*nloc*sizeof(double));
+            MPI_Bcast(Atemp, b*mloc, MPI_DOUBLE, i, row_comm);
+            MPI_Bcast(Btemp, b*nloc, MPI_DOUBLE, i, col_comm);
+
         }
     }
 
@@ -112,10 +120,35 @@ int main(int argc, char** argv) {
 			<< total_time << endl;
     }
 
+
+    if (DEBUG) {
+        MPI_Barrier(MPI_COMM_WORLD);
+        
+        cout << "Process (" << ranki << "," << rankj << ") [" << rank << "]:\n";
+        cout << "Alocal: \n";
+        for (int i = 0; i < mloc; i++) {
+            for (int j = 0; j < nloc; j++) {
+                cout << Alocal[i+j*mloc] << " ";
+            }
+            cout << "\n";
+        }
+        cout << "\nBlocal: \n";
+        for (int i = 0; i < mloc; i++) {
+            for (int j = 0; j < nloc; j++) {
+                cout << Blocal[i*nloc+j] << " ";
+            }
+            cout << "\n";
+        }
+        cout << endl;
+    }
+
+
     // Clean up
     delete [] Alocal;
     delete [] Blocal;
     delete [] Clocal;
+    delete [] Atemp;
+    delete [] Btemp;
     MPI_Comm_free(&row_comm);
     MPI_Comm_free(&col_comm);
     MPI_Finalize();

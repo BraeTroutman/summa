@@ -137,7 +137,7 @@ int main(int argc, char** argv) {
 
     if (DEBUG) {
         ofstream logfile;
-        logfile.open("log" + to_string(ranki) + to_string(rankj) + ".txt");
+        logfile.open("log/" + to_string(ranki) + ":" + to_string(rankj) + ".log");
         logfile << "Process (" << ranki << "," << rankj << ") [" << rank << "]:\n";
         logfile << "Alocal: \n";
         for (int i = 0; i < mloc; i++) {

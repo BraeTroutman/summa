@@ -115,6 +115,17 @@ int main(int argc, char** argv) {
     MPI_Barrier(MPI_COMM_WORLD);
     double total_time = MPI_Wtime() - start;
 
+    if (IDENT) {
+        bool local_success = true;
+        bool global_success;
+
+        for (int i = 0; i < mloc*nloc; i++)
+            local_success = local_success && (Clocal[i] == Alocal[i]);
+
+        MPI_Reduce(&local_success, &global_success, 1, MPI_C_BOOL, MPI_LAND, 0, MPI_COMM_WORLD);
+        if (!rank) assert(global_success);
+    }
+
     // Print time
     if(!rank) {
         cout << nProcs << ","

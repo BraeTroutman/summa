@@ -12,10 +12,9 @@ using namespace std;
 
 const bool DEBUG = true;
 
-// initialize matrix and vectors (A is mxn, x is xn-vec)
+// initialize matrix
 void init_rand(double* a, int m, int n);
-// local matvec: y = y+A*x, where A is m x n
-void local_gemv(double* A, double* x, double* y, int m, int n);
+// local matrix matrix multiply: C = A*B, where A is mxn and B is nxm
 void local_gemm(double* a, double* b, double* c, int m, int n);
 
 int main(int argc, char** argv) {
@@ -69,21 +68,24 @@ int main(int argc, char** argv) {
     }
 
     // Initialize matrices and vectors
-    int mloc = m / p;     // number of rows of local matrix
-    int nloc = m / p;     // number of cols of local matrix
-   
+    int mloc = m / p;     // number of rows of local matrices
+    int nloc = m / p;     // number of cols of local matrices
+  
+    // create space for local blocks of global matrices
     // column-wise multiplicand
     double* Alocal = new double[mloc*nloc];
     // row-wise multiplier
     double* Blocal = new double[mloc*nloc];
     // column-wise product
     double* Clocal = new double[mloc*nloc];
-    
+   
+    // create space to temporarily hold broadcasted data for local mults
     // n/sqrt(p) by b temporary matrix
     double* Atemp = new double[b*mloc];
     // b by n/sqrt(p) temporary matrix
     double* Btemp = new double[b*mloc];
 
+    // initialize local blocks of matrices A, B, and C
    	init_rand(Alocal, mloc, nloc);
 	if (IDENT) {
 		for (int i = 0; i < nloc; i++) {
@@ -95,7 +97,7 @@ int main(int argc, char** argv) {
 				}
 			}
 		}
-	}
+	} else init_rand(Blocal, mloc, nloc);
     memset(Clocal,0,mloc*nloc*sizeof(double));
 
     // start timer
@@ -116,6 +118,8 @@ int main(int argc, char** argv) {
     MPI_Barrier(MPI_COMM_WORLD);
     double total_time = MPI_Wtime() - start;
 
+    // if using an identity matrix for the multiplier, check that the result 
+    // of the local multiplication is equal to Alocal
     if (IDENT) {
         bool local_success = true;
         bool global_success;
@@ -126,7 +130,7 @@ int main(int argc, char** argv) {
         MPI_Reduce(&local_success, &global_success, 1, MPI_C_BOOL, MPI_LAND, 0, MPI_COMM_WORLD);
         if (!rank) assert(global_success);
     }
-
+    
     // Print time
     if(!rank) {
         cout << nProcs << ","
@@ -182,15 +186,6 @@ int main(int argc, char** argv) {
     MPI_Comm_free(&row_comm);
     MPI_Comm_free(&col_comm);
     MPI_Finalize();
-}
-
-void local_gemv(double* a, double* x, double* y, int m, int n) {
-    // order for loops to match col-major storage
-    for(int i = 0; i < m; i++) {
-        for(int j = 0; j < n; j++) {
-            y[i] += a[i+j*m] * x[j];
-        }
-    }
 }
 
 void local_gemm(double* a, double* b, double* c, int m, int n) {

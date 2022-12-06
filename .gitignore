@@ -1,4 +1,6 @@
 bin
 profile*
+tautrace*
+event*
 a.out
 *.o

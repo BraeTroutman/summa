@@ -6,3 +6,6 @@ tautrace*
 event*
 a.out
 *.o
+*.slog2
+summatrace
+summaprof

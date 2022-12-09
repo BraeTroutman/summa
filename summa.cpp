@@ -11,7 +11,7 @@
 using namespace std;
 
 const bool DEBUG = true;
-
+const bool IDENT = true;
 // initialize matrix
 void init_rand(double* a, int m, int n);
 // local matrix matrix multiply: C = A*B, where A is mxn and B is nxm
@@ -27,15 +27,14 @@ int main(int argc, char** argv) {
     srand(rank*12345);
 
     // Read dimensions and processor grid from command line arguments
-    if(argc != 4) {
-        cerr << "Usage: ./a.out m b identity[yes|no])" << endl;
+    if(argc != 3) {
+        cerr << "Usage: ./a.out m b)" << endl;
         return 1;
     }
 
     int m, b;
     m = atoi(argv[1]);
     b = atoi(argv[2]);
-	bool IDENT = !strcmp(argv[3], "yes");
     
     int p = sqrt(nProcs);
     if (p*p != nProcs) {

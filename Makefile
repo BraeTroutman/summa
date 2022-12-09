@@ -12,3 +12,5 @@ $(BUILDDIR)/summatau: summa.cpp
 	mkdir -p $(BUILDDIR)
 	tau_cxx.sh summa.cpp -o bin/summatau
 
+clean: 
+	-rm bin/*

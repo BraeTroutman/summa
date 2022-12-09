@@ -1,6 +1,8 @@
 bin
 profile*
 tautrace*
+*.edf
+*.trc
 event*
 a.out
 *.o

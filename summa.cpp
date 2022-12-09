@@ -10,12 +10,12 @@
 
 using namespace std;
 
-const bool DEBUG = true;
+const bool DEBUG = false;
 const bool IDENT = true;
 // initialize matrix
 void init_rand(double* a, int m, int n);
-// local matrix matrix multiply: C = A*B, where A is mxn and B is nxm
-void local_gemm(double* a, double* b, double* c, int m, int n);
+// local matrix matrix multiply: C = A*B, where A is ambn x an and B is bm x ambn
+void local_gemm(double* a, double* b, double* c, int ambn, int an, int bm);
 
 int main(int argc, char** argv) {
 
@@ -109,7 +109,7 @@ int main(int argc, char** argv) {
             memcpy(Btemp, Blocal+b*j*nloc, b*nloc*sizeof(double));
             MPI_Bcast(Atemp, b*mloc, MPI_DOUBLE, i, row_comm);
             MPI_Bcast(Btemp, b*nloc, MPI_DOUBLE, i, col_comm);
-            local_gemm(Atemp, Btemp, Clocal, mloc, b);
+            local_gemm(Atemp, Btemp, Clocal, mloc, b, b);
         }
     }
 
@@ -146,7 +146,6 @@ int main(int argc, char** argv) {
 
         s << "log/" << ranki << ":" << rankj << ".log";
         s >> filename;
-
         logfile.open(filename.data());
         logfile << "Process (" << ranki << "," << rankj << ") [" << rank << "]:\n";
         logfile << "Alocal: \n";
@@ -187,16 +186,16 @@ int main(int argc, char** argv) {
     MPI_Finalize();
 }
 
-void local_gemm(double* a, double* b, double* c, int m, int n) {
-    // assume a is in column-major storage, and b is in row-major storage
-    for (int i = 0; i < m; i++) {
-        for (int j = 0; j < m; j++) {
-            for (int k = 0; k < n; k++) {
-                // C(i,j) += A(i,k) * B(k,j)
-                c[i+j*m] += a[i+k*m] * b[k*n+j];
-            }
-        }
-    }
+void local_gemm(double* a, double* b, double* c, int ambn, int an, int bm) {        
+    // assume a is in column-major storage, and b is in row-major storage        
+    for (int i = 0; i < ambn; i++) {        
+        for (int j = 0; j < ambn; j++) {        
+            for (int k = 0; k < an; k++) {        
+                // C(i,j) += A(i,k) * B(k,j)    
+                c[i+ambn*j] += a[i+ambn*k] * b[k*ambn+j];    
+            }        
+        }        
+    }        
 }
 
 void init_rand(double* a, int m, int n) {

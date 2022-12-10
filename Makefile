@@ -14,3 +14,10 @@ $(BUILDDIR)/summatau: summa.cpp
 
 clean: 
 	-rm bin/*
+	-rm *.trc
+	-rm profile*
+	-rm *.edf
+	-rm summaprof
+	-rm summatrace
+	-rm summa.o
+	-rm summa.slog2
